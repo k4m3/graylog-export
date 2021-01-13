@@ -1,0 +1,116 @@
+<form theme="dark">
+  <label>Graylog Search</label>
+  <fieldset submitButton="true">
+    <input type="radio" token="sourcetype">
+      <label>sourcetype</label>
+      <choice value="| search *">_raw</choice>
+      <choice value="| rex field=log &quot;box_id=\&quot;(?&lt;box_id&gt;[^\&quot;]+)&quot;  | rex field=log &quot;session_id=\&quot;(?&lt;session_id&gt;[^\&quot;]+)&quot;  | rex field=log &quot;channel=\&quot;(?&lt;channel&gt;[^\&quot;]+)&quot;  | rex field=log &quot;logtype=\&quot;(?&lt;logtype&gt;[^\&quot;]+)&quot;  | rex field=log &quot;date=\&quot;(?&lt;_time&gt;[^\&quot;]+)&quot;  | rex field=log &quot;action=\&quot;(?&lt;action&gt;[^\&quot;]+)&quot;  | rex field=log &quot;rule_action=\&quot;(?&lt;rule_action&gt;[^\&quot;]+)&quot;  | rex field=log &quot;src=\&quot;(?&lt;src&gt;[^\&quot;]+)&quot;  | rex field=log &quot;client_ip=\&quot;(?&lt;client_ip&gt;[^\&quot;]+)&quot;  | rex field=log &quot;dst=\&quot;(?&lt;dst&gt;[^\&quot;]+)&quot;  | rex field=log &quot;sport=\&quot;(?&lt;sport&gt;[^\&quot;]+)&quot;  | rex field=log &quot;dport=\&quot;(?&lt;dport&gt;[^\&quot;]+)&quot;  | rex field=log &quot;proto=\&quot;(?&lt;proto&gt;[^\&quot;]+)&quot;  | rex field=log &quot;service=\&quot;(?&lt;service&gt;[^\&quot;]+)&quot;  | rex field=log &quot;client_mac=\&quot;(?&lt;client_mac&gt;[^\&quot;]+)&quot;  | rex field=log &quot;devin=\&quot;(?&lt;devin&gt;[^\&quot;]+)&quot;  | rex field=log &quot;devout=\&quot;(?&lt;devout&gt;[^\&quot;]+)&quot;  | rex field=log &quot;zonein=\&quot;(?&lt;zonein&gt;[^\&quot;]+)&quot;  | rex field=log &quot;zoneout=\&quot;(?&lt;zoneout&gt;[^\&quot;]+)&quot;  | rex field=log &quot;rule_name=\&quot;(?&lt;rule_name&gt;[^\&quot;]+)&quot;  | rex field=log &quot;bytes_up=\&quot;(?&lt;bytes_up&gt;[^\&quot;]+)&quot;  | rex field=log &quot;bytes_down=\&quot;(?&lt;bytes_down&gt;[^\&quot;]+)&quot;  | rex field=log &quot;bytes=\&quot;(?&lt;bytes&gt;[^\&quot;]+)&quot; | rex field=log &quot;client_user=\&quot;(?&lt;client_user&gt;[^\&quot;]+)&quot;">Blockbit</choice>
+      <default>| search *</default>
+    </input>
+    <input type="radio" token="log">
+      <label>_raw</label>
+      <choice value="*">true</choice>
+      <choice value="- log">false</choice>
+      <prefix>| fields </prefix>
+      <default>*</default>
+    </input>
+    <input type="multiselect" token="source">
+      <label>source</label>
+      <choice value="*">Any</choice>
+      <default>*</default>
+      <prefix>"</prefix>
+      <suffix>"</suffix>
+      <fieldForLabel>Name</fieldForLabel>
+      <fieldForValue>source</fieldForValue>
+      <search>
+        <query>| inputlookup source.csv</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <delimiter> OR </delimiter>
+    </input>
+    <input type="text" token="query" searchWhenChanged="true">
+      <label>Query</label>
+      <default>*</default>
+      <prefix>log="*</prefix>
+      <suffix>*"</suffix>
+    </input>
+    <input type="multiselect" token="Fields">
+      <label>Fields</label>
+      <fieldForLabel>column</fieldForLabel>
+      <fieldForValue>column</fieldForValue>
+      <search>
+        <query>| dumpgray $time$ $source$ $sourcetype$
+| stats dc(*) as * | transpose | table column</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <choice value="*">Any</choice>
+      <prefix>fields + </prefix>
+      <delimiter> </delimiter>
+      <default>*</default>
+    </input>
+    <input type="text" token="min">
+      <label>Minutes convert</label>
+      <default>60</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>To convert</title>
+      <table>
+        <search>
+          <query>| makeresults 
+| eval Min=$min$
+| eval seconds=Min*60
+| fields - _time Min</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="time">$click.value2$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Log</title>
+      <table>
+        <search>
+          <query>| makeresults 
+| dumpgray "$time$" $source$ $sourcetype$ | search $query$ 
+| $Fields$
+$log$
+| sort - _time
+| appendpipe 
+    [ stats count 
+    | where count=0]</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <link target="_blank">search?q=%7C%20makeresults%20%0A%7C%20dumpgray%20%22$time$%22%20$source$%20$sourcetype$%20%7C%20search%20$query$%20%0A%7C%20$Fields$%0A$log$%0A%7C%20top%20$click.name2$&amp;earliest=-24h@h&amp;latest=now</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

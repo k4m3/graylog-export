@@ -1,0 +1,26 @@
+[]
+access = read : [ * ], write : [ admin ]
+export = system
+version = 8.1.1
+modtime = 1610368229.811391000
+
+[app/ui]
+version = 8.1.1
+modtime = 1610412010.130640000
+
+[app/launcher]
+version = 8.1.1
+modtime = 1610412010.132742000
+
+[app/package/check_for_updates]
+version = 8.1.1
+modtime = 1610412010.133748000
+
+[views/graylog_search]
+owner = admin
+version = 8.1.1
+modtime = 1610463919.376041000
+
+[nav/default]
+version = 8.1.1
+modtime = 1610412305.976983000
